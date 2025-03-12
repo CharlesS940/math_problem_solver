@@ -1,0 +1,17 @@
+[project]
+name = "math-problem-solver"
+version = "0.1.0"
+description = "Small app for solving math problems!"
+authors = [
+    {name = "Charles Siret",email = "charles.siret.cs@orange.fr"}
+]
+readme = "README.md"
+requires-python = ">=3.10, <4.0"
+dependencies = [
+    "ollama (>=0.4.7,<0.5.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
