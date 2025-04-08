@@ -1,37 +1,45 @@
 import sys
 import requests
+import json
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QLabel, QTextEdit, QPushButton, QComboBox, 
                             QHBoxLayout, QLineEdit, QMessageBox, QSplitter)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 
+from PyQt6.QtGui import QTextCursor
+
 class OllamaThread(QThread):
-    """Background thread for Ollama API calls"""
-    result_ready = pyqtSignal(str)
+    token_received = pyqtSignal(str)  # New signal for each token
     error_occurred = pyqtSignal(str)
-    
+
     def __init__(self, model, problem, system_prompt):
         super().__init__()
         self.model = model
         self.problem = problem
         self.system_prompt = system_prompt
-        
+
     def run(self):
         try:
             request_data = {
                 "model": self.model,
                 "prompt": self.problem,
                 "system": self.system_prompt,
-                "stream": False
+                "stream": True
             }
-            
-            response = requests.post("http://localhost:11434/api/generate", json=request_data)
-            
-            if response.status_code == 200:
-                solution = response.json().get("response", "No solution returned")
-                self.result_ready.emit(solution)
-            else:
-                self.error_occurred.emit(f"Error: {response.status_code}\n{response.text}")
+
+            with requests.post("http://localhost:11434/api/generate", json=request_data, stream=True) as response:
+                if response.status_code == 200:
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                data = json.loads(line.decode('utf-8'))
+                                token = data.get("response", "")
+                                if token:
+                                    self.token_received.emit(token)
+                            except json.JSONDecodeError:
+                                continue
+                else:
+                    self.error_occurred.emit(f"Error: {response.status_code}\n{response.text}")
         except Exception as e:
             self.error_occurred.emit(f"Failed to connect to Ollama API: {str(e)}")
 
@@ -149,16 +157,22 @@ class OllamaMathSolver(QMainWindow):
             return
         
         # Show processing state
-        self.output_box.setText("Solving problem, please wait...")
+        self.output_box.clear()
         self.statusBar().showMessage(f"Processing with model: {model}")
         
         # Process in background thread
         self.solver_thread = OllamaThread(model, problem, self.prompt_field.text())
-        self.solver_thread.result_ready.connect(self.display_solution)
+        self.solver_thread.token_received.connect(self.append_token)
         self.solver_thread.error_occurred.connect(self.show_error)
         self.solver_thread.finished.connect(lambda: self.statusBar().showMessage("Ready"))
         self.solver_thread.start()
     
+    def append_token(self, token):
+        self.output_box.moveCursor(QTextCursor.MoveOperation.End)
+        self.output_box.insertPlainText(token)
+        self.output_box.ensureCursorVisible()
+
+
     def display_solution(self, solution):
         """Display the solution from Ollama"""
         self.output_box.setText(solution)
