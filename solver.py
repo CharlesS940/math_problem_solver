@@ -233,7 +233,7 @@ class OllamaMathSolver(QMainWindow):
         self.download_thread.error.connect(lambda msg: QMessageBox.warning(self, "Download Error", msg))
         self.download_thread.done.connect(lambda: self.statusBar().showMessage(f"Download complete: {model_name}"))
         self.download_thread.done.connect(lambda: self.output_box.append(f"Download complete"))
-
+        self.download_thread.done.connect(self.load_models)
         self.download_thread.start()
 
     def update_download_progress(self, percent_str):
