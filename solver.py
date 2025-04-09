@@ -41,15 +41,16 @@ class OllamaMathSolver(QMainWindow):
         self.model_box.setEditable(True)
         model_row.addWidget(self.model_box)
         
-        refresh_btn = QPushButton("Refresh")
-        refresh_btn.clicked.connect(self.load_models)
-        model_row.addWidget(refresh_btn)
-        input_layout.addLayout(model_row)
-
-        # Download model button
+        # Download button
         download_btn = QPushButton("Download")
         download_btn.clicked.connect(self.download_model)
         model_row.addWidget(download_btn)
+        input_layout.addLayout(model_row)
+
+        # Delete button
+        delete_btn = QPushButton("Delete")
+        delete_btn.clicked.connect(self.delete_model)
+        model_row.addWidget(delete_btn)
 
         
         # Problem input
@@ -156,6 +157,7 @@ class OllamaMathSolver(QMainWindow):
         QMessageBox.warning(self, "Error", message)
 
     def download_model(self):
+        """Download a model from Ollama"""
         model_name = self.model_box.currentText().strip()
         if not model_name:
             QMessageBox.warning(self, "Error", "Please enter a model name to download.")
@@ -178,6 +180,32 @@ class OllamaMathSolver(QMainWindow):
         cursor.select(QTextCursor.SelectionType.Document)
         cursor.removeSelectedText()
         cursor.insertText(f"Downloading: {percent_str}")
+
+    def delete_model(self):
+        """Delete the selected model"""
+        model_name = self.model_box.currentText().strip()
+        if not model_name:
+            QMessageBox.warning(self, "Error", "Please select a model to delete.")
+            return
+
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            f"Are you sure you want to delete the model '{model_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if confirm == QMessageBox.StandardButton.Yes:
+            try:
+                response = requests.delete("http://localhost:11434/api/delete", json={"name": model_name})
+                if response.status_code == 200:
+                    self.statusBar().showMessage(f"Deleted model: {model_name}")
+                    self.output_box.append(f"Deleted model: {model_name}")
+                    self.load_models()
+                else:
+                    QMessageBox.warning(self, "Delete Failed", f"Error deleting model:\n{response.text}")
+            except Exception as e:
+                QMessageBox.warning(self, "Connection Error", f"Could not connect to Ollama.\n\nError: {str(e)}")
 
 
 
