@@ -43,6 +43,37 @@ class OllamaThread(QThread):
         except Exception as e:
             self.error_occurred.emit(f"Failed to connect to Ollama API: {str(e)}")
 
+class OllamaDownloadThread(QThread):
+    progress = pyqtSignal(str)
+    error = pyqtSignal(str)
+    done = pyqtSignal()
+
+    def __init__(self, model_name):
+        super().__init__()
+        self.model_name = model_name
+
+    def run(self):
+        try:
+            with requests.post("http://localhost:11434/api/pull", json={"name": self.model_name}, stream=True) as response:
+                if response.status_code == 200:
+                    for line in response.iter_lines():
+                        if line:
+                            try:
+                                data = json.loads(line.decode('utf-8'))
+                                total = data.get("total", "")
+                                completed = data.get("completed", "")
+                                percent = int((completed / total) * 100) if total and completed else ""
+                                self.progress.emit(f"{percent}%")
+
+                            except json.JSONDecodeError:
+                                continue
+                    self.done.emit()
+                else:
+                    self.error.emit(f"Download failed: {response.status_code}\n{response.text}")
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class OllamaMathSolver(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -78,6 +109,12 @@ class OllamaMathSolver(QMainWindow):
         refresh_btn.clicked.connect(self.load_models)
         model_row.addWidget(refresh_btn)
         input_layout.addLayout(model_row)
+
+        # Download model button
+        download_btn = QPushButton("Download")
+        download_btn.clicked.connect(self.download_model)
+        model_row.addWidget(download_btn)
+
         
         # Problem input
         input_layout.addWidget(QLabel("Math Problem:"))
@@ -181,6 +218,32 @@ class OllamaMathSolver(QMainWindow):
         """Display error messages"""
         self.output_box.setText(message)
         QMessageBox.warning(self, "Error", message)
+
+    def download_model(self):
+        model_name = self.model_box.currentText().strip()
+        if not model_name:
+            QMessageBox.warning(self, "Error", "Please enter a model name to download.")
+            return
+
+        self.statusBar().showMessage(f"Downloading model: {model_name}")
+        self.output_box.append(f"Starting download of model: {model_name}")
+
+        self.download_thread = OllamaDownloadThread(model_name)
+        self.download_thread.progress.connect(self.update_download_progress)
+        self.download_thread.error.connect(lambda msg: QMessageBox.warning(self, "Download Error", msg))
+        self.download_thread.done.connect(lambda: self.statusBar().showMessage(f"Download complete: {model_name}"))
+        self.download_thread.done.connect(lambda: self.output_box.append(f"Download complete"))
+
+        self.download_thread.start()
+
+    def update_download_progress(self, percent_str):
+        """Update the output box with just the current download percentage"""
+        cursor = self.output_box.textCursor()
+        cursor.select(QTextCursor.SelectionType.Document)
+        cursor.removeSelectedText()
+        cursor.insertText(f"Downloading: {percent_str}")
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
