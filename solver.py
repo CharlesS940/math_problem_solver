@@ -4,75 +4,11 @@ import json
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QLabel, QTextEdit, QPushButton, QComboBox, 
                             QHBoxLayout, QLineEdit, QMessageBox, QSplitter)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt
 
 from PyQt6.QtGui import QTextCursor
 
-class OllamaThread(QThread):
-    token_received = pyqtSignal(str)  # New signal for each token
-    error_occurred = pyqtSignal(str)
-
-    def __init__(self, model, problem, system_prompt):
-        super().__init__()
-        self.model = model
-        self.problem = problem
-        self.system_prompt = system_prompt
-
-    def run(self):
-        try:
-            request_data = {
-                "model": self.model,
-                "prompt": self.problem,
-                "system": self.system_prompt,
-                "stream": True
-            }
-
-            with requests.post("http://localhost:11434/api/generate", json=request_data, stream=True) as response:
-                if response.status_code == 200:
-                    for line in response.iter_lines():
-                        if line:
-                            try:
-                                data = json.loads(line.decode('utf-8'))
-                                token = data.get("response", "")
-                                if token:
-                                    self.token_received.emit(token)
-                            except json.JSONDecodeError:
-                                continue
-                else:
-                    self.error_occurred.emit(f"Error: {response.status_code}\n{response.text}")
-        except Exception as e:
-            self.error_occurred.emit(f"Failed to connect to Ollama API: {str(e)}")
-
-class OllamaDownloadThread(QThread):
-    progress = pyqtSignal(str)
-    error = pyqtSignal(str)
-    done = pyqtSignal()
-
-    def __init__(self, model_name):
-        super().__init__()
-        self.model_name = model_name
-
-    def run(self):
-        try:
-            with requests.post("http://localhost:11434/api/pull", json={"name": self.model_name}, stream=True) as response:
-                if response.status_code == 200:
-                    for line in response.iter_lines():
-                        if line:
-                            try:
-                                data = json.loads(line.decode('utf-8'))
-                                total = data.get("total", "")
-                                completed = data.get("completed", "")
-                                percent = int((completed / total) * 100) if total and completed else ""
-                                self.progress.emit(f"{percent}%")
-
-                            except json.JSONDecodeError:
-                                continue
-                    self.done.emit()
-                else:
-                    self.error.emit(f"Download failed: {response.status_code}\n{response.text}")
-        except Exception as e:
-            self.error.emit(str(e))
-
+from threads import OllamaThread, OllamaDownloadThread
 
 class OllamaMathSolver(QMainWindow):
     def __init__(self):
