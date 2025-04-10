@@ -56,4 +56,8 @@ Designed for math-focused prompts — but works with any topic
 
 Desktop interface with PyQt6
 
-Planning on adding SymPy support to improve accuracy on numerical problems in a future update!
+# Update plan
+
+SymPy support to improve accuracy on numerical problems
+
+GPU support
