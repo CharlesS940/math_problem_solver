@@ -13,7 +13,14 @@ The required python version is 3.10.
 I am using poetry to manage packages so you will need to install it if you do not have it already:
 
 ```
+# Linux
 curl -sSL https://install.python-poetry.org | python3 -
+
+# Mac-os
+curl -sSL https://install.python-poetry.org | python3 -
+
+# Windows
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
 ```
 
 and in the cloned repository: 
