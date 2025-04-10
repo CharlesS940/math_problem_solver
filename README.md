@@ -23,7 +23,7 @@ curl -sSL https://install.python-poetry.org | python3 -
 (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
 ```
 
-and in the cloned repository: 
+and in the cloned repository:
 
 ```
 poetry install
@@ -50,6 +50,14 @@ poetry run python solver.py
 ```
 
 which will open the PyQt widget and start the application!
+
+# Downloading models from Ollama
+
+Go to https://ollama.com/search and find the model you would like to use, RAM requirements are listed with the models so keep in mind your PC specs.
+
+Type the model's name as it appears in Ollama and click download (eg: gemma2:2b for the 2 billion parameter version of gemma2). 
+
+You will then be able to select it for inference in the drop down menu.
 
 # Features
 
