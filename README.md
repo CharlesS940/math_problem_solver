@@ -46,3 +46,14 @@ which will open the PyQt widget and start the application!
 
 # Features
 
+Streamed local LLM responses
+
+Download models on demand via Ollama
+
+Delete models to manage disk space
+
+Designed for math-focused prompts — but works with any topic
+
+Desktop interface with PyQt6
+
+Planning on adding SymPy support to improve accuracy on numerical problems in a future update!
