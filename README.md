@@ -29,7 +29,7 @@ and in the cloned repository:
 poetry install
 ```
 
-to install poetry and the virtual envorinment specified in pyproject.toml.
+to install poetry and the virtual environment specified in pyproject.toml.
 
 Ollama is also required to run this application, you can find download instructions here: https://ollama.com/download.
 
